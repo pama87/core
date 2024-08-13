@@ -1658,15 +1658,16 @@ class UpdateConfig:
             if re.search("openWB/system/device/[0-9]+/config", topic) is not None:
                 device = decode_payload(payload)
                 if "vendor" not in device:
-                    name = device.get("type")
+                    updated_payload = device
+                    vendor_name = device.get("type")
                     core_path = str(_get_packages_path())
                     relative_path = core_path + "/modules/devices/"
-                    path = glob.glob(f'{relative_path}/**/{name}', recursive=True)
-                    path_to_str = str(path)
-                    split_path = path_to_str.split("/")
-                    vendor = split_path[split_path.index("devices")+1]
-                    updated_payload = device
-                    updated_payload.update({"vendor": vendor})
-                    return {topic: updated_payload}
+                    try:
+                        path_list = glob.glob(f'{relative_path}/**/{vendor_name}')
+                        for path in path_list:
+                            updated_payload.update({"vendor": Path(path).parts[-2]})
+                            return {topic: updated_payload}
+                    except Exception:
+                        log.exception("Fehler im Datastore 55 - Geraeteliste")
         self._loop_all_received_topics(upgrade)
         self.__update_topic("openWB/system/datastore_version", 55)
